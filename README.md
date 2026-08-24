@@ -42,24 +42,24 @@ These are Claude Code commands — run `claude` to start a session first.
 
 ```
 /plugin marketplace add linq-team/claude-code-imessage-channel
-/plugin install imessage@linq
+/plugin install linq@ultim8xyz-claude-code-linq-channel
 ```
 
 ### 3. Give the server your credentials
 
 ```
-/imessage:configure <your-linq-token>
-/imessage:configure <your-linq-phone-number>
+/linq:configure <your-linq-token>
+/linq:configure <your-linq-phone-number>
 ```
 
-Writes `LINQ_TOKEN=...` and `LINQ_FROM_PHONE=...` to `~/.claude/channels/imessage/.env`. You can also write that file by hand, or set the variables in your shell environment — shell takes precedence.
+Writes `LINQ_TOKEN=...` and `LINQ_FROM_PHONE=...` to `~/.claude/channels/linq/.env`. You can also write that file by hand, or set the variables in your shell environment — shell takes precedence.
 
 ### 4. Relaunch with the channel flag
 
 The server won't connect without this — exit your session and start a new one:
 
 ```bash
-claude --dangerously-load-development-channels plugin:imessage@linq
+claude --dangerously-load-development-channels plugin:linq@ultim8xyz-claude-code-linq-channel
 ```
 
 > **Note:** Don't launch from the plugin repo directory — the local `.mcp.json` will conflict. Launch from any other directory (e.g. `~/Desktop`, your project folder, etc.).
@@ -69,7 +69,7 @@ claude --dangerously-load-development-channels plugin:imessage@linq
 With Claude Code running from the previous step, text your Linq number from iMessage — you'll get a 6-character pairing code back. In your Claude Code session:
 
 ```
-/imessage:access pair <code>
+/linq:access pair <code>
 ```
 
 Your next text reaches the assistant.
@@ -79,7 +79,7 @@ Your next text reaches the assistant.
 Pairing is for capturing phone numbers. Once you're in, switch to allowlist so strangers don't get pairing-code replies:
 
 ```
-/imessage:access policy allowlist
+/linq:access policy allowlist
 ```
 
 ### Optional: Set a startup greeting
@@ -87,7 +87,7 @@ Pairing is for capturing phone numbers. Once you're in, switch to allowlist so s
 So Claude texts you automatically when it starts:
 
 ```
-/imessage:access recipient +1XXXXXXXXXX
+/linq:access recipient +1XXXXXXXXXX
 ```
 
 Restart Claude Code with the channel flag. Claude texts you on startup.
@@ -96,9 +96,9 @@ Restart Claude Code with the channel flag. Claude texts you on startup.
 
 A Linq number is publicly addressable via iMessage. Anyone who knows the number can text it, and without a gate those messages flow straight into your assistant session. The access model decides who gets through.
 
-By default, a text from an unknown sender triggers **pairing**: the server replies with a 6-character code and drops the message. You run `/imessage:access pair <code>` from your assistant session to approve them. Once approved, their messages pass through.
+By default, a text from an unknown sender triggers **pairing**: the server replies with a 6-character code and drops the message. You run `/linq:access pair <code>` from your assistant session to approve them. Once approved, their messages pass through.
 
-All state lives in `~/.claude/channels/imessage/access.json`. The `/imessage:access` skill commands edit this file; the server re-reads it on every inbound message, so changes take effect without a restart.
+All state lives in `~/.claude/channels/linq/access.json`. The `/linq:access` skill commands edit this file; the server re-reads it on every inbound message, so changes take effect without a restart.
 
 ### At a glance
 
@@ -106,7 +106,7 @@ All state lives in `~/.claude/channels/imessage/access.json`. The `/imessage:acc
 |-|-|
 | Default policy | `pairing` |
 | Sender ID | Phone number in E.164 format (e.g. `+1XXXXXXXXXX`) |
-| Config file | `~/.claude/channels/imessage/access.json` |
+| Config file | `~/.claude/channels/linq/access.json` |
 
 ### DM policies
 
@@ -114,13 +114,13 @@ All state lives in `~/.claude/channels/imessage/access.json`. The `/imessage:acc
 
 | Policy | Behavior |
 |--------|----------|
-| `pairing` (default) | Reply with a pairing code, drop the message. Approve with `/imessage:access pair <code>`. |
+| `pairing` (default) | Reply with a pairing code, drop the message. Approve with `/linq:access pair <code>`. |
 | `allowlist` | Drop silently. No reply. Useful if your number is shared and pairing replies would attract spam. |
 | `open` | Anyone can message. No filtering. |
 | `disabled` | Drop everything, including allowlisted senders. |
 
 ```
-/imessage:access policy allowlist
+/linq:access policy allowlist
 ```
 
 ### Phone numbers
@@ -128,44 +128,44 @@ All state lives in `~/.claude/channels/imessage/access.json`. The `/imessage:acc
 iMessage uses phone numbers as identifiers. The allowlist stores E.164 format numbers (e.g. `+1XXXXXXXXXX`). Pairing captures the number automatically.
 
 ```
-/imessage:access allow +1XXXXXXXXXX
-/imessage:access remove +1XXXXXXXXXX
+/linq:access allow +1XXXXXXXXXX
+/linq:access remove +1XXXXXXXXXX
 ```
 
 ### Delivery
 
-Configure inbound behavior with `/imessage:access set <key> <value>`.
+Configure inbound behavior with `/linq:access set <key> <value>`.
 
 **ackReaction** — tapback sent on message receipt. iMessage supports: `like`, `love`, `laugh`, `dislike`, `emphasize`, `question`. Empty string disables.
 
 ```
-/imessage:access set ackReaction love
-/imessage:access set ackReaction ""
+/linq:access set ackReaction love
+/linq:access set ackReaction ""
 ```
 
 **pollInterval** — how often the server checks for new messages, in milliseconds. Default `3000`.
 
 ```
-/imessage:access set pollInterval 5000
+/linq:access set pollInterval 5000
 ```
 
 ### Skill reference
 
 | Command | Effect |
 |---------|--------|
-| `/imessage:access` | Print current state: policy, allowlist, pending pairings. |
-| `/imessage:access pair a4f91c` | Approve pairing code. Adds sender to `allowFrom`. |
-| `/imessage:access deny a4f91c` | Discard pending code. Sender not notified. |
-| `/imessage:access allow +1XXXXXXXXXX` | Add a phone number directly. |
-| `/imessage:access remove +1XXXXXXXXXX` | Remove from allowlist. |
-| `/imessage:access policy allowlist` | Set dmPolicy. Values: `pairing`, `allowlist`, `open`, `disabled`. |
-| `/imessage:access recipient +1XXXXXXXXXX` | Set default recipient for startup greeting. |
-| `/imessage:access set ackReaction love` | Set a config key: `ackReaction`, `pollInterval`. |
-| `/imessage:access clear` | Delete access.json, reset to defaults. |
+| `/linq:access` | Print current state: policy, allowlist, pending pairings. |
+| `/linq:access pair a4f91c` | Approve pairing code. Adds sender to `allowFrom`. |
+| `/linq:access deny a4f91c` | Discard pending code. Sender not notified. |
+| `/linq:access allow +1XXXXXXXXXX` | Add a phone number directly. |
+| `/linq:access remove +1XXXXXXXXXX` | Remove from allowlist. |
+| `/linq:access policy allowlist` | Set dmPolicy. Values: `pairing`, `allowlist`, `open`, `disabled`. |
+| `/linq:access recipient +1XXXXXXXXXX` | Set default recipient for startup greeting. |
+| `/linq:access set ackReaction love` | Set a config key: `ackReaction`, `pollInterval`. |
+| `/linq:access clear` | Delete access.json, reset to defaults. |
 
 ### Config file
 
-`~/.claude/channels/imessage/access.json`. Absent file is equivalent to `pairing` policy with empty lists, so the first text triggers pairing.
+`~/.claude/channels/linq/access.json`. Absent file is equivalent to `pairing` policy with empty lists, so the first text triggers pairing.
 
 ```json
 {
@@ -182,21 +182,21 @@ Configure inbound behavior with `/imessage:access set <key> <value>`.
 
 ## Configuration
 
-Credentials are stored in `~/.claude/channels/imessage/.env`:
+Credentials are stored in `~/.claude/channels/linq/.env`:
 
 ```
 LINQ_TOKEN=your-api-token
 LINQ_FROM_PHONE=+1XXXXXXXXXX
 ```
 
-Manage with `/imessage:configure`:
+Manage with `/linq:configure`:
 
 | Command | Effect |
 |---------|--------|
-| `/imessage:configure` | Show current status (token set? phone set?). |
-| `/imessage:configure <token>` | Save token to `.env`. |
-| `/imessage:configure +1XXXXXXXXXX` | Save phone number to `.env`. |
-| `/imessage:configure clear` | Remove all credentials. |
+| `/linq:configure` | Show current status (token set? phone set?). |
+| `/linq:configure <token>` | Save token to `.env`. |
+| `/linq:configure +1XXXXXXXXXX` | Save phone number to `.env`. |
+| `/linq:configure clear` | Remove all credentials. |
 
 Environment variables (`LINQ_TOKEN`, `LINQ_FROM_PHONE`, etc.) override the `.env` file.
 
@@ -230,7 +230,7 @@ When Claude starts, it automatically sets a contact card ("Claude Code" with log
 
 ## Photos
 
-Inbound photos are downloaded to `~/.claude/channels/imessage/inbox/` and the local path is included in the channel notification so the assistant can `Read` it. iMessage compresses photos — if you need the original file, send it as a document instead.
+Inbound photos are downloaded to `~/.claude/channels/linq/inbox/` and the local path is included in the channel notification so the assistant can `Read` it. iMessage compresses photos — if you need the original file, send it as a document instead.
 
 ## Effects
 
@@ -256,7 +256,7 @@ Style ranges can overlap, but animations cannot overlap with other animations or
 
 - **Two-way iMessage** — text in, get replies back as iMessages
 - **File attachments** — send images, videos, audio, documents via local file paths
-- **Inbound photos** — downloaded to `~/.claude/channels/imessage/inbox/`, Claude can view them
+- **Inbound photos** — downloaded to `~/.claude/channels/linq/inbox/`, Claude can view them
 - **iMessage effects** — confetti, fireworks, lasers, slam, gentle, and 10 more screen/bubble effects
 - **Threaded replies** — reply to a specific message with `reply_to`
 - **SMS/RCS fallback** — messages try iMessage first, fall back automatically

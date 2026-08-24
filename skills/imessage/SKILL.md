@@ -24,4 +24,4 @@ Read receipts and typing indicators are handled automatically.
 
 ## Configuration
 
-Credentials are stored in `~/.claude/channels/imessage/.env`. Run `/imessage:configure` to manage them.
+Credentials are stored in `~/.claude/channels/linq/.env`. Run `/linq:configure` to manage them.

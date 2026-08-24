@@ -1,8 +1,12 @@
 {
   "mcpServers": {
-    "imessage": {
+    "linq": {
       "command": "npm",
-      "args": ["--prefix", "${CLAUDE_PLUGIN_ROOT}", "start"]
+      "args": [
+        "--prefix",
+        "${CLAUDE_PLUGIN_ROOT}",
+        "start"
+      ]
     }
   }
 }

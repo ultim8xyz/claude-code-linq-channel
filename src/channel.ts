@@ -7,10 +7,10 @@
  * into your Claude Code session. Claude replies back via iMessage.
  *
  * Setup:
- *   /plugin install imessage@linq-team-claude-code-imessage-channel
- *   /imessage:configure <token>
- *   /imessage:configure <phone>
- *   claude --channels plugin:imessage@linq-team-claude-code-imessage-channel
+ *   /plugin install linq@ultim8xyz-claude-code-linq-channel
+ *   /linq:configure <token>
+ *   /linq:configure <phone>
+ *   claude --channels plugin:linq@ultim8xyz-claude-code-linq-channel
  */
 import { Server } from '@modelcontextprotocol/sdk/server/index.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
@@ -43,7 +43,7 @@ interface AccessConfig {
   pollInterval?: number
 }
 
-const ACCESS_FILE = path.join(process.env.HOME || '', '.claude', 'channels', 'imessage', 'access.json')
+const ACCESS_FILE = path.join(process.env.HOME || '', '.claude', 'channels', 'linq', 'access.json')
 
 function loadAccessConfig(): AccessConfig {
   try {
@@ -71,7 +71,7 @@ function generatePairingCode(): string {
   return Math.random().toString(36).substring(2, 8)
 }
 
-const CHANNEL_DIR = path.join(process.env.HOME || '', '.claude', 'channels', 'imessage')
+const CHANNEL_DIR = path.join(process.env.HOME || '', '.claude', 'channels', 'linq')
 const STATE_FILE = path.join(CHANNEL_DIR, '.state.json')
 
 interface ChannelState {
@@ -96,7 +96,7 @@ function saveState(lastPollTime: string, seenIds: string[]): void {
     fs.mkdirSync(path.dirname(STATE_FILE), { recursive: true })
     fs.writeFileSync(STATE_FILE, JSON.stringify({ lastPollTime, seenIds: seenIds.slice(-500) }, null, 2) + '\n')
   } catch (e: any) {
-    console.error('[imessage] Failed to save state:', e.message)
+    console.error('[linq] Failed to save state:', e.message)
   }
 }
 
@@ -111,7 +111,7 @@ function parseEnvFile(filePath: string): Record<string, string> {
       if (eq === -1) continue
       vars[trimmed.slice(0, eq).trim()] = trimmed.slice(eq + 1).trim()
     }
-  } catch (e: any) { console.error('[imessage] Failed to read env file:', e.message) }
+  } catch (e: any) { console.error('[linq] Failed to read env file:', e.message) }
   return vars
 }
 
@@ -148,7 +148,7 @@ function loadChannelConfig(): ChannelConfig {
         if (profile) {
           if (!token && profile.token) {
             token = profile.token
-            console.error('[imessage] using legacy ~/.linq/config.json — run /imessage:configure to migrate')
+            console.error('[linq] using legacy ~/.linq/config.json — run /linq:configure to migrate')
           }
           fromPhone = fromPhone || profile.fromPhone || ''
           defaultRecipient = defaultRecipient || profile.defaultRecipient || ''
@@ -170,10 +170,10 @@ function loadChannelConfig(): ChannelConfig {
 const config = loadChannelConfig()
 
 if (!config.token) {
-  console.error('[imessage] WARNING: LINQ_TOKEN not configured — API calls will fail. Run /imessage:configure <token>')
+  console.error('[linq] WARNING: LINQ_TOKEN not configured — API calls will fail. Run /linq:configure <token>')
 }
 if (!config.fromPhone) {
-  console.error('[imessage] WARNING: LINQ_FROM_PHONE not configured — cannot send messages. Run /imessage:configure <phone>')
+  console.error('[linq] WARNING: LINQ_FROM_PHONE not configured — cannot send messages. Run /linq:configure <phone>')
 }
 
 // --- Linq SDK Client ---
@@ -186,7 +186,7 @@ const linq = new Linq({
 // --- MCP Channel Server ---
 
 const mcp = new Server(
-  { name: 'imessage', version: '0.2.0' },
+  { name: 'linq', version: '0.2.0' },
   {
     capabilities: {
       experimental: { 'claude/channel': {} },
@@ -361,15 +361,15 @@ async function uploadFiles(files?: string[]): Promise<string[]> {
 }
 
 async function markRead(chatId: string): Promise<void> {
-  try { await linq.chats.markAsRead(chatId) } catch (e: any) { console.error('[imessage] markRead error:', e.message) }
+  try { await linq.chats.markAsRead(chatId) } catch (e: any) { console.error('[linq] markRead error:', e.message) }
 }
 
 async function startTyping(chatId: string): Promise<void> {
-  try { await linq.chats.typing.start(chatId) } catch (e: any) { console.error('[imessage] startTyping error:', e.message) }
+  try { await linq.chats.typing.start(chatId) } catch (e: any) { console.error('[linq] startTyping error:', e.message) }
 }
 
 async function stopTyping(chatId: string): Promise<void> {
-  try { await linq.chats.typing.stop(chatId) } catch (e: any) { console.error('[imessage] stopTyping error:', e.message) }
+  try { await linq.chats.typing.stop(chatId) } catch (e: any) { console.error('[linq] stopTyping error:', e.message) }
 }
 
 // --- Tool Handlers ---
@@ -513,7 +513,7 @@ async function pollForMessages(): Promise<void> {
                     localPath = path.join(inboxDir, `${msg.id}_${filename}`)
                     await fs.promises.writeFile(localPath, buffer)
                   }
-                } catch (e: any) { console.error('[imessage] Failed to download attachment:', e.message) }
+                } catch (e: any) { console.error('[linq] Failed to download attachment:', e.message) }
               }
               attachments.push({ id: partId, filename, mime_type: (part as any).mime_type || 'unknown', localPath })
             } catch {
@@ -529,7 +529,7 @@ async function pollForMessages(): Promise<void> {
         // Access control
         const access = loadAccessConfig()
         if (access.dmPolicy === 'disabled') {
-          console.error(`[imessage] Dropped (policy: disabled)`)
+          console.error(`[linq] Dropped (policy: disabled)`)
           continue
         }
 
@@ -546,10 +546,10 @@ async function pollForMessages(): Promise<void> {
               await linq.chats.messages.send(chatId, {
                 message: { parts: [{ type: 'text', value: `Pairing code: ${code}\nGive this to the Claude Code operator to approve your access.` }] },
               })
-            } catch (e: any) { console.error('[imessage] Failed to send pairing code:', e.message) }
-            console.error(`[imessage] Pairing code ${code} sent to ${sender}`)
+            } catch (e: any) { console.error('[linq] Failed to send pairing code:', e.message) }
+            console.error(`[linq] Pairing code ${code} sent to ${sender}`)
           } else {
-            console.error(`[imessage] Dropped message from ${sender} (not in allowlist)`)
+            console.error(`[linq] Dropped message from ${sender} (not in allowlist)`)
           }
           continue
         }
@@ -558,7 +558,7 @@ async function pollForMessages(): Promise<void> {
         if (access.ackReaction && msg.id) {
           try {
             await linq.messages.addReaction(msg.id, { type: access.ackReaction as any, operation: 'add', part_index: 0 })
-          } catch (e: any) { console.error('[imessage] ackReaction error:', e.message) }
+          } catch (e: any) { console.error('[linq] ackReaction error:', e.message) }
         }
 
         markRead(chatId)
@@ -586,7 +586,7 @@ async function pollForMessages(): Promise<void> {
             },
           },
         })
-        console.error(`[imessage] ${sender}: ${messageText.substring(0, 80)}${attachments.length > 0 ? ` [${attachments.length} attachment(s)]` : ''}`)
+        console.error(`[linq] ${sender}: ${messageText.substring(0, 80)}${attachments.length > 0 ? ` [${attachments.length} attachment(s)]` : ''}`)
       }
     }
 
@@ -600,7 +600,7 @@ async function pollForMessages(): Promise<void> {
       arr.forEach(id => seenMessageIds.add(id))
     }
   } catch (e: any) {
-    console.error(`[imessage] Poll error: ${e.message}`)
+    console.error(`[linq] Poll error: ${e.message}`)
   }
 }
 
@@ -617,7 +617,7 @@ async function setupContactCard(): Promise<void> {
     const active = cards.find((c: any) => c.phone_number === config.fromPhone && c.is_active)
 
     if (active && active.first_name === 'Claude' && active.last_name === 'Code') {
-      console.error(`[imessage]   Contact card already set: Claude Code`)
+      console.error(`[linq]   Contact card already set: Claude Code`)
       return
     }
 
@@ -627,9 +627,9 @@ async function setupContactCard(): Promise<void> {
       last_name: 'Code',
       image_url: CLAUDE_CODE_LOGO,
     })
-    console.error(`[imessage]   Contact card set: Claude Code`)
+    console.error(`[linq]   Contact card set: Claude Code`)
   } catch (e: any) {
-    console.error(`[imessage]   Contact card setup error: ${e.message}`)
+    console.error(`[linq]   Contact card setup error: ${e.message}`)
   }
 }
 
@@ -671,9 +671,9 @@ const webhookServer = http.createServer(async (req, res) => {
         meta: { sender, chat_id: chatId, message_id: messageId },
       },
     })
-    console.error(`[imessage] webhook: ${sender}: ${messageText.substring(0, 80)}`)
+    console.error(`[linq] webhook: ${sender}: ${messageText.substring(0, 80)}`)
   } catch (e: any) {
-    console.error(`[imessage] Webhook error: ${e.message}`)
+    console.error(`[linq] Webhook error: ${e.message}`)
   }
 
   res.writeHead(200)
@@ -682,36 +682,36 @@ const webhookServer = http.createServer(async (req, res) => {
 
 webhookServer.on('error', (err: any) => {
   if (err.code === 'EADDRINUSE') {
-    console.error(`[imessage]   Webhook: port ${config.webhookPort} in use, skipping (polling still active)`)
+    console.error(`[linq]   Webhook: port ${config.webhookPort} in use, skipping (polling still active)`)
   } else {
-    console.error(`[imessage]   Webhook error: ${err.message}`)
+    console.error(`[linq]   Webhook error: ${err.message}`)
   }
 })
 
 webhookServer.listen(config.webhookPort, '127.0.0.1', () => {
-  console.error(`[imessage]   Webhook: http://127.0.0.1:${config.webhookPort} (fallback)`)
+  console.error(`[linq]   Webhook: http://127.0.0.1:${config.webhookPort} (fallback)`)
 })
 
 // --- Startup ---
 
 const startupAccess = loadAccessConfig()
 
-console.error(`[imessage] Channel ready`)
-console.error(`[imessage]   Policy:  ${startupAccess.dmPolicy}`)
-console.error(`[imessage]   Polling: every ${startupAccess.pollInterval || POLL_INTERVAL}ms`)
-console.error(`[imessage]   From:    ${config.fromPhone}`)
-console.error(`[imessage]   API:     ${config.apiUrl}`)
+console.error(`[linq] Channel ready`)
+console.error(`[linq]   Policy:  ${startupAccess.dmPolicy}`)
+console.error(`[linq]   Polling: every ${startupAccess.pollInterval || POLL_INTERVAL}ms`)
+console.error(`[linq]   From:    ${config.fromPhone}`)
+console.error(`[linq]   API:     ${config.apiUrl}`)
 if (startupAccess.allowFrom.length > 0) {
-  console.error(`[imessage]   Allowed: ${startupAccess.allowFrom.join(', ')}`)
+  console.error(`[linq]   Allowed: ${startupAccess.allowFrom.join(', ')}`)
 }
 
 setupContactCard()
 
 if (config.token && config.fromPhone) {
   setInterval(pollForMessages, startupAccess.pollInterval || POLL_INTERVAL)
-  console.error(`[imessage]   Polling started`)
+  console.error(`[linq]   Polling started`)
 } else {
-  console.error(`[imessage]   Polling skipped (not configured)`)
+  console.error(`[linq]   Polling skipped (not configured)`)
 }
 
 setTimeout(async () => {
@@ -732,7 +732,7 @@ setTimeout(async () => {
     await mcp.notification({
       method: 'notifications/claude/channel',
       params: {
-        content: 'Channel connected but Linq is not configured. Tell the user to run:\n1. /imessage:configure <token> — set their Linq API token\n2. /imessage:configure <phone> — set their Linq phone number\nGet a token at https://zero.linqapp.com/api-tooling/ or run `linq signup` for a sandbox.',
+        content: 'Channel connected but Linq is not configured. Tell the user to run:\n1. /linq:configure <token> — set their Linq API token\n2. /linq:configure <phone> — set their Linq phone number\nGet a token at https://zero.linqapp.com/api-tooling/ or run `linq signup` for a sandbox.',
         meta: { sender: 'system', event_type: 'setup_required' },
       },
     })

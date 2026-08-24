@@ -6,14 +6,14 @@
   },
   "plugins": [
     {
-      "name": "imessage",
-      "description": "iMessage messaging bridge powered by Linq with built-in access control. Manage pairing, allowlists, and policy via /imessage:access.",
+      "name": "linq",
+      "description": "iMessage messaging bridge powered by Linq with built-in access control. Manage pairing, allowlists, and policy via /linq:access.",
       "category": "productivity",
       "source": {
         "source": "url",
-        "url": "https://github.com/linq-team/claude-code-imessage-channel.git"
+        "url": "https://github.com/ultim8xyz/claude-code-linq-channel.git"
       },
-      "homepage": "https://github.com/linq-team/claude-code-imessage-channel"
+      "homepage": "https://github.com/ultim8xyz/claude-code-linq-channel"
     }
   ]
 }

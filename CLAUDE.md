@@ -8,7 +8,7 @@ When enabled as a channel, this plugin bridges iMessage and your Claude Code ses
 
 - Polls the Linq API for new inbound iMessages every 3 seconds
 - Pushes them into the Claude Code session as `<channel>` events
-- Downloads inbound photos to `~/.claude/channels/imessage/inbox/`
+- Downloads inbound photos to `~/.claude/channels/linq/inbox/`
 - Exposes tools for Claude to reply, send, react, edit, and attach files via iMessage
 - Auto-sends read receipts and typing indicators
 - Tries iMessage first, falls back to SMS/RCS automatically
@@ -35,16 +35,16 @@ If the message has a photo, `image_path` is included in the meta — use `Read` 
 
 ## Configuration
 
-Credentials are stored in `~/.claude/channels/imessage/.env`:
+Credentials are stored in `~/.claude/channels/linq/.env`:
 
 - `LINQ_TOKEN` - Linq API token (required)
 - `LINQ_FROM_PHONE` - Your Linq phone number (required)
 
-Access control is in `~/.claude/channels/imessage/access.json`. Use `/imessage:access` to manage.
+Access control is in `~/.claude/channels/linq/access.json`. Use `/linq:access` to manage.
 
 ## Setup
 
 1. Add marketplace: `/plugin marketplace add linq-team/claude-code-imessage-channel`
-2. Install: `/plugin install imessage@linq`
-3. Configure: `/imessage:configure <token>` then `/imessage:configure <phone>`
-4. Launch: `claude --dangerously-load-development-channels plugin:imessage@linq`
+2. Install: `/plugin install linq@ultim8xyz-claude-code-linq-channel`
+3. Configure: `/linq:configure <token>` then `/linq:configure <phone>`
+4. Launch: `claude --dangerously-load-development-channels plugin:linq@ultim8xyz-claude-code-linq-channel`
