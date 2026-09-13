@@ -474,6 +474,10 @@ const seenMessageIds = new Set<string>(savedState.seenIds)
 let lastPollTime = savedState.lastPollTime
 
 async function pollForMessages(): Promise<void> {
+  // The cutoff is when this poll began, not when the last one ended: a message that lands while a poll is in flight
+  // is missed by that poll and would otherwise be older than the cutoff by the time the next one lists it. seenIds
+  // keeps a message from arriving twice.
+  const pollStarted = new Date(Date.now() - 5000).toISOString()
   try {
     const chatsData = await linq.chats.listChats({ from: config.fromPhone, limit: 10 })
     const chats = chatsData.chats || []
@@ -590,7 +594,7 @@ async function pollForMessages(): Promise<void> {
       }
     }
 
-    lastPollTime = new Date().toISOString()
+    lastPollTime = pollStarted
     saveState(lastPollTime, [...seenMessageIds])
 
     if (seenMessageIds.size > 1000) {
