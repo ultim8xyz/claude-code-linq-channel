@@ -692,9 +692,15 @@ webhookServer.on('error', (err: any) => {
   }
 })
 
-webhookServer.listen(config.webhookPort, '127.0.0.1', () => {
-  console.error(`[linq]   Webhook: http://127.0.0.1:${config.webhookPort} (fallback)`)
-})
+// LINQ_CHANNEL_POLL=0: this process serves the tools only. Nothing is polled or received here, so a session that is
+// not the line's own never marks its texts read or records them as seen for the one that is.
+const channelOff = process.env.LINQ_CHANNEL_POLL === '0'
+
+if (!channelOff) {
+  webhookServer.listen(config.webhookPort, '127.0.0.1', () => {
+    console.error(`[linq]   Webhook: http://127.0.0.1:${config.webhookPort} (fallback)`)
+  })
+}
 
 // --- Startup ---
 
@@ -711,7 +717,9 @@ if (startupAccess.allowFrom.length > 0) {
 
 setupContactCard()
 
-if (config.token && config.fromPhone) {
+if (channelOff) {
+  console.error(`[linq]   Polling off (LINQ_CHANNEL_POLL=0): tools only`)
+} else if (config.token && config.fromPhone) {
   setInterval(pollForMessages, startupAccess.pollInterval || POLL_INTERVAL)
   console.error(`[linq]   Polling started`)
 } else {

@@ -200,6 +200,10 @@ Manage with `/linq:configure`:
 
 Environment variables (`LINQ_TOKEN`, `LINQ_FROM_PHONE`, etc.) override the `.env` file.
 
+`LINQ_CHANNEL_POLL=0` makes a session's copy of the plugin serve the tools only: it neither polls nor listens for
+webhooks, so a session that is not the line's own never marks its texts read or records them as seen. Set it for every
+session except the one running with `--channels plugin:linq@linq`.
+
 ## Tools exposed to the assistant
 
 | Tool | Purpose |
