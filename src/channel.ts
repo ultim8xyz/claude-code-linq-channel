@@ -41,6 +41,8 @@ interface AccessConfig {
   pendingPairings: Record<string, { phone: string; createdAt: string }>
   ackReaction?: string
   pollInterval?: number
+  /** Recipients already greeted once. A number here is never greeted again; delete it to greet them afresh. */
+  greeted?: string[]
 }
 
 const ACCESS_FILE = path.join(process.env.HOME || '', '.claude', 'channels', 'linq', 'access.json')
@@ -55,9 +57,10 @@ function loadAccessConfig(): AccessConfig {
       pendingPairings: raw.pendingPairings || {},
       ackReaction: raw.ackReaction,
       pollInterval: raw.pollInterval,
+      greeted: raw.greeted || [],
     }
   } catch {
-    return { dmPolicy: 'pairing', allowFrom: [], pendingPairings: {} }
+    return { dmPolicy: 'pairing', allowFrom: [], pendingPairings: {}, greeted: [] }
   }
 }
 
@@ -726,9 +729,23 @@ if (channelOff) {
   console.error(`[linq]   Polling skipped (not configured)`)
 }
 
+// What a fresh process says for itself, and only the one that is the line says anything: a tools-only process
+// (LINQ_CHANNEL_POLL=0) receives nothing and speaks for no number, so it has nothing to announce.
 setTimeout(async () => {
+  if (channelOff) return
   const recipient = config.defaultRecipient || startupAccess.defaultRecipient || (startupAccess.allowFrom.length > 0 ? startupAccess.allowFrom[0] : '')
   if (recipient) {
+    // The greeting is how a new pairing proves itself, which is news exactly once. Every connection after that is a
+    // restart — a new process on a line the recipient already has and has already used — and a restart is not
+    // something they asked about, so it passes in silence. `greeted` in access.json is what remembers; clear it to
+    // greet again. Written before the notification goes, so a crash costs a greeting rather than repeating one.
+    if (startupAccess.greeted?.includes(recipient)) {
+      console.error(`[linq]   Greeting: skipped, ${recipient} was greeted before`)
+      return
+    }
+    const access = loadAccessConfig()
+    access.greeted = [...(access.greeted || []), recipient]
+    saveAccessConfig(access)
     await mcp.notification({
       method: 'notifications/claude/channel',
       params: {

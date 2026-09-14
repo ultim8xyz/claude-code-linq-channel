@@ -22,6 +22,7 @@ Read `~/.claude/channels/linq/access.json` and print:
 - `defaultRecipient` if set
 - `ackReaction` if set
 - `pollInterval` if non-default
+- `greeted` — numbers already greeted once, which are not greeted again
 
 If the file doesn't exist, report: "No access config — defaulting to `pairing` policy. The first inbound message will trigger a pairing code."
 
@@ -53,7 +54,11 @@ Set `dmPolicy`. Valid values:
 After setting `allowlist`, remind the user to add their number with `/linq:access allow <phone>` if not already present.
 
 ### `recipient <phone>`
-Set `defaultRecipient` — the number Claude texts on startup to confirm the connection.
+Set `defaultRecipient` — the number Claude texts once, on the first startup after pairing, to confirm the connection.
+
+### `greet`
+Empty the `greeted` list, so the next startup greets `defaultRecipient` again. The greeting is once-only: it proves a
+new pairing works, and every startup after that is a restart the recipient did not ask about.
 
 ### `set <key> <value>`
 Set a delivery config key. Valid keys:
@@ -97,7 +102,11 @@ The server re-reads `access.json` on every inbound message, so changes take effe
   "ackReaction": "love",
 
   // Polling interval in ms.
-  "pollInterval": 3000
+  "pollInterval": 3000,
+
+  // Numbers already greeted. Written by the channel server the first time it greets one; a number here is never
+  // greeted again. Empty it with `/linq:access greet`.
+  "greeted": ["+1XXXXXXXXXX"]
 }
 ```
 
@@ -111,6 +120,7 @@ The server re-reads `access.json` on every inbound message, so changes take effe
 | `/linq:access allow +1XXXXXXXXXX` | Add a phone number to allowlist. |
 | `/linq:access remove +1XXXXXXXXXX` | Remove from allowlist. |
 | `/linq:access policy allowlist` | Set dmPolicy. Values: `pairing`, `allowlist`, `open`, `disabled`. |
-| `/linq:access recipient +1XXXXXXXXXX` | Set default recipient for startup greeting. |
+| `/linq:access recipient +1XXXXXXXXXX` | Set default recipient for the one-time startup greeting. |
+| `/linq:access greet` | Empty `greeted`, so the next startup greets the recipient again. |
 | `/linq:access set ackReaction love` | Set config key: `ackReaction`, `pollInterval`. |
 | `/linq:access clear` | Delete access.json, reset to defaults. |

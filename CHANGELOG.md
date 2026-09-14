@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.3
+
+- The startup greeting is once per recipient, not once per process: a number in the new `greeted` list in
+  `access.json` is never greeted again, so a restart no longer texts the owner or costs a turn. `/linq:access greet`
+  empties the list.
+- `LINQ_CHANNEL_POLL=0` also silences the startup notification: a tools-only process receives nothing and speaks for
+  no number, so it has nothing to announce.
+
 ## 0.2.0
 
 - Restructured as installable Claude Code plugin (`/plugin install imessage@linq`)

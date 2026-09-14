@@ -84,13 +84,17 @@ Pairing is for capturing phone numbers. Once you're in, switch to allowlist so s
 
 ### Optional: Set a startup greeting
 
-So Claude texts you automatically when it starts:
+So Claude texts you once the bridge is up:
 
 ```
 /linq:access recipient +1XXXXXXXXXX
 ```
 
-Restart Claude Code with the channel flag. Claude texts you on startup.
+Restart Claude Code with the channel flag and Claude texts you.
+
+It greets you once. The greeting is how a new pairing proves itself, and after that every startup is a restart you did
+not ask about — a new process on a line you already have — so it comes up in silence. The number is remembered in
+`greeted` in `access.json`; `/linq:access greet` empties it and arms the greeting again.
 
 ## Access & Delivery
 
@@ -159,7 +163,8 @@ Configure inbound behavior with `/linq:access set <key> <value>`.
 | `/linq:access allow +1XXXXXXXXXX` | Add a phone number directly. |
 | `/linq:access remove +1XXXXXXXXXX` | Remove from allowlist. |
 | `/linq:access policy allowlist` | Set dmPolicy. Values: `pairing`, `allowlist`, `open`, `disabled`. |
-| `/linq:access recipient +1XXXXXXXXXX` | Set default recipient for startup greeting. |
+| `/linq:access recipient +1XXXXXXXXXX` | Set default recipient for the one-time startup greeting. |
+| `/linq:access greet` | Empty `greeted`, so the next startup greets the recipient again. |
 | `/linq:access set ackReaction love` | Set a config key: `ackReaction`, `pollInterval`. |
 | `/linq:access clear` | Delete access.json, reset to defaults. |
 

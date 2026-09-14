@@ -1,7 +1,7 @@
 {
   "name": "linq",
   "description": "iMessage messaging bridge powered by Linq with built-in access control. Manage pairing, allowlists, and policy via /linq:access.",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "keywords": [
     "imessage",
     "sms",
