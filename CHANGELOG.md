@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.2.4
+
+- Every text handed to claude is journaled to `~/.claude/channels/linq/inbound.jsonl`: its id, chat, sender and words,
+  the claude session it went to (`CLAUDE_CODE_SESSION_ID`), and whether the hand-off threw. A harness reads it to tell
+  a text claude never showed from one it did.
+- A hand-off that throws is that text's: said, journaled with the error, and the poll goes on. It used to abort the
+  poll before the save, and every text after it was marked seen and never sent.
+- The state is saved after a failed poll too, with the cutoff unmoved, so its time says the poller is alive.
+- stderr is kept in `~/.claude/channels/linq/plugin.log`. claude reads a server's stderr only at the handshake.
+- The process exits when its stdin closes. Left behind by a killed claude, it polled on into a dead pipe.
+
 ## 0.2.3
 
 - The startup greeting is once per recipient, not once per process: a number in the new `greeted` list in

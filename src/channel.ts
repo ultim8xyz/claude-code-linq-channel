@@ -76,6 +76,39 @@ function generatePairingCode(): string {
 
 const CHANNEL_DIR = path.join(process.env.HOME || '', '.claude', 'channels', 'linq')
 const STATE_FILE = path.join(CHANNEL_DIR, '.state.json')
+// What this process says on stderr, kept: claude reads an MCP server's stderr once, at the handshake, so a poll error
+// or a dropped message said later was lost. Appended with the time and pid, cut back to its last half past 1 MB.
+const LOG_FILE = path.join(CHANNEL_DIR, 'plugin.log')
+// Every text handed to claude, one JSON line each: its id, chat, sender and words, which claude session it went to
+// (CLAUDE_CODE_SESSION_ID), and whether the hand-off threw. What a harness reads to tell a text claude never showed
+// from one it did (orchard's line watch). Cut back to its last 200 lines past 500.
+const JOURNAL_FILE = path.join(CHANNEL_DIR, 'inbound.jsonl')
+
+function trimTo(file: string, over: number, keep: (text: string) => string): void {
+  try { if (fs.statSync(file).size > over) fs.writeFileSync(file, keep(fs.readFileSync(file, 'utf-8'))) } catch {}
+}
+
+{
+  const write = process.stderr.write.bind(process.stderr) as (chunk: any, ...rest: any[]) => boolean
+  process.stderr.write = ((chunk: any, ...rest: any[]) => {
+    try {
+      fs.mkdirSync(CHANNEL_DIR, { recursive: true })
+      fs.appendFileSync(LOG_FILE, `${new Date().toISOString()} [${process.pid}] ${String(chunk)}`)
+      trimTo(LOG_FILE, 1_000_000, t => t.slice(t.length / 2))
+    } catch {}
+    return write(chunk, ...rest)
+  }) as typeof process.stderr.write
+}
+
+function journal(entry: { id: string; chat_id: string; sender: string; text: string; ok: boolean; error?: string; image_path?: string }): void {
+  try {
+    fs.mkdirSync(CHANNEL_DIR, { recursive: true })
+    fs.appendFileSync(JOURNAL_FILE, JSON.stringify({ at: Date.now(), ...entry, session: process.env.CLAUDE_CODE_SESSION_ID, pid: process.pid }) + '\n')
+    let lines = 0
+    try { lines = fs.readFileSync(JOURNAL_FILE, 'utf-8').split('\n').length } catch {}
+    if (lines > 500) fs.writeFileSync(JOURNAL_FILE, fs.readFileSync(JOURNAL_FILE, 'utf-8').split('\n').filter(Boolean).slice(-200).join('\n') + '\n')
+  } catch (e: any) { console.error('[linq] Failed to write the journal:', e.message) }
+}
 
 interface ChannelState {
   lastPollTime: string
@@ -468,6 +501,11 @@ mcp.setRequestHandler(CallToolRequestSchema, async (req) => {
 // --- Connect to Claude Code ---
 
 await mcp.connect(new StdioServerTransport())
+// The process goes with the claude that started it. Left behind (claude killed from outside), it polled on into a dead
+// pipe, reading texts and marking them read for nobody.
+process.stdin.on('end', () => process.exit(0))
+process.stdin.on('close', () => process.exit(0))
+mcp.onclose = () => process.exit(0)
 
 // --- Message Polling ---
 
@@ -573,10 +611,14 @@ async function pollForMessages(): Promise<void> {
 
         // Push to Claude Code
         const imagePaths = attachments.filter(a => a.localPath && a.mime_type.startsWith('image/')).map(a => a.localPath!)
+        // One text's failed hand-off is that text's, said and journaled, not the whole poll's: thrown out of the loop it
+        // skipped the save and every text after it, each already marked seen and never sent again.
+        const content = messageText || (attachments.length > 0 ? '(attachment)' : '')
+        try {
         await mcp.notification({
           method: 'notifications/claude/channel',
           params: {
-            content: messageText || (attachments.length > 0 ? '(attachment)' : ''),
+            content,
             meta: {
               sender,
               chat_id: chatId,
@@ -593,6 +635,12 @@ async function pollForMessages(): Promise<void> {
             },
           },
         })
+        } catch (e: any) {
+          console.error(`[linq] Notification failed for ${msg.id}: ${e.message}`)
+          journal({ id: msg.id, chat_id: chatId, sender, text: content, ok: false, error: e.message, ...(imagePaths.length === 1 && { image_path: imagePaths[0] }) })
+          continue
+        }
+        journal({ id: msg.id, chat_id: chatId, sender, text: content, ok: true, ...(imagePaths.length === 1 && { image_path: imagePaths[0] }) })
         console.error(`[linq] ${sender}: ${messageText.substring(0, 80)}${attachments.length > 0 ? ` [${attachments.length} attachment(s)]` : ''}`)
       }
     }
@@ -608,6 +656,9 @@ async function pollForMessages(): Promise<void> {
     }
   } catch (e: any) {
     console.error(`[linq] Poll error: ${e.message}`)
+    // Saved anyway, the cutoff unmoved: the state file's time is how a harness tells a poller that is failing (said
+    // above, in the log) from one that stopped.
+    saveState(lastPollTime, [...seenMessageIds])
   }
 }
 
