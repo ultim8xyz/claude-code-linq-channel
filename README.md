@@ -300,6 +300,7 @@ claude-code-imessage-channel/
 │   └── channel.ts           # Channel server
 ├── CLAUDE.md
 ├── package.json
+├── start.sh                 # Starts the server; builds only when dist is stale
 └── tsconfig.json
 ```
 

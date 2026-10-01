@@ -1,11 +1,9 @@
 {
   "mcpServers": {
     "linq": {
-      "command": "npm",
+      "command": "sh",
       "args": [
-        "--prefix",
-        "${CLAUDE_PLUGIN_ROOT}",
-        "start"
+        "${CLAUDE_PLUGIN_ROOT}/start.sh"
       ]
     }
   }

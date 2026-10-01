@@ -6,7 +6,7 @@
   "main": "dist/channel.js",
   "scripts": {
     "build": "tsc",
-    "start": "npm install --no-summary && npx tsc && node dist/channel.js"
+    "start": "sh start.sh"
   },
   "dependencies": {
     "@linqapp/sdk": "^0.12.2",

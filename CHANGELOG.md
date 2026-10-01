@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- The server starts through `start.sh`, not `npm start`. It runs `npm install` and `tsc` only when `dist` is missing
+  or older than `src` or `package.json`, then execs node. Every start used to install and compile, and on a loaded
+  machine that ran past claude's 30-second MCP connect limit, so the channel never came up.
+
 ## 0.2.4
 
 - Every text handed to claude is journaled to `~/.claude/channels/linq/inbound.jsonl`: its id, chat, sender and words,
