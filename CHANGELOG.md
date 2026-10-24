@@ -1,7 +1,12 @@
 # Changelog
 
-## Unreleased
+## 0.2.5
 
+- `LINQ_CHANNEL_DIR` names the channel folder, `~/.claude/channels/linq` where it is unset: credentials, `access.json`,
+  the poll state, the journal, `plugin.log` and `inbox/` all live there, and the skills read and write there. A harness
+  gives each line's process its own, so several lines run on one machine user without sharing an access list or a
+  poll cutoff. With it set there is no fallback to `~/.linq/config.json`: the CLI's profile is the machine user's last
+  sign-in, and a process with a folder of its own is one line's.
 - The server starts through `start.sh`, not `npm start`. It runs `npm install` and `tsc` only when `dist` is missing
   or older than `src` or `package.json`, then execs node. Every start used to install and compile, and on a loaded
   machine that ran past claude's 30-second MCP connect limit, so the channel never came up.

@@ -209,6 +209,13 @@ Environment variables (`LINQ_TOKEN`, `LINQ_FROM_PHONE`, etc.) override the `.env
 webhooks, so a session that is not the line's own never marks its texts read or records them as seen. Set it for every
 session except the one running with `--channels plugin:linq@linq`.
 
+`LINQ_CHANNEL_DIR` moves the whole channel folder — `.env`, `access.json`, the poll state, the journal, `plugin.log`
+and `inbox/` — out of `~/.claude/channels/linq`. A harness running several lines on one machine user gives each process
+a folder of its own, with that line's `LINQ_TOKEN` and `LINQ_FROM_PHONE` in its environment, so no line reads or writes
+another's state. With it set the server never falls back to the Linq CLI's `~/.linq/config.json`, whose profile is
+whichever account the machine user last signed into. Every path this README gives under `~/.claude/channels/linq` is
+under that folder instead.
+
 ## Tools exposed to the assistant
 
 | Tool | Purpose |

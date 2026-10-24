@@ -45,7 +45,11 @@ interface AccessConfig {
   greeted?: string[]
 }
 
-const ACCESS_FILE = path.join(process.env.HOME || '', '.claude', 'channels', 'linq', 'access.json')
+// The channel's folder: its credentials, access list, poll state, journal, log and inbox. `LINQ_CHANNEL_DIR` names one of
+// its own, which is how a harness runs several lines on one machine user, each process on its own number and nothing
+// of one line's read or written by another's; unset, it is the one folder every process on the machine user shares.
+const CHANNEL_DIR = process.env.LINQ_CHANNEL_DIR || path.join(process.env.HOME || '', '.claude', 'channels', 'linq')
+const ACCESS_FILE = path.join(CHANNEL_DIR, 'access.json')
 
 function loadAccessConfig(): AccessConfig {
   try {
@@ -74,7 +78,6 @@ function generatePairingCode(): string {
   return Math.random().toString(36).substring(2, 8)
 }
 
-const CHANNEL_DIR = path.join(process.env.HOME || '', '.claude', 'channels', 'linq')
 const STATE_FILE = path.join(CHANNEL_DIR, '.state.json')
 // What this process says on stderr, kept: claude reads an MCP server's stderr once, at the handshake, so a poll error
 // or a dropped message said later was lost. Appended with the time and pid, cut back to its last half past 1 MB.
@@ -173,8 +176,10 @@ function loadChannelConfig(): ChannelConfig {
     if (cfg.apiUrl) apiUrl = cfg.apiUrl
   } catch (e: any) { /* config.json is optional */ }
 
-  // Legacy fallback: ~/.linq/config.json
-  if (!token || !fromPhone) {
+  // Legacy fallback: ~/.linq/config.json, the Linq CLI's own profile. Never for a folder of its own: that process is
+  // one line's, and the CLI's profile is whatever account the machine user last signed into, which would put it on
+  // another number.
+  if ((!token || !fromPhone) && !process.env.LINQ_CHANNEL_DIR) {
     const legacyPath = path.join(process.env.HOME || '', '.linq', 'config.json')
     if (fs.existsSync(legacyPath)) {
       try {

@@ -24,4 +24,4 @@ Read receipts and typing indicators are handled automatically.
 
 ## Configuration
 
-Credentials are stored in `~/.claude/channels/linq/.env`. Run `/linq:configure` to manage them.
+Credentials are stored in `.env` in the channel folder: `$LINQ_CHANNEL_DIR` where it is set (a harness running several lines on one machine gives each process its own), else `~/.claude/channels/linq`, or in the process's environment, which wins. Run `/linq:configure` to manage them.

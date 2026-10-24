@@ -42,6 +42,9 @@ Credentials are stored in `~/.claude/channels/linq/.env`:
 
 Access control is in `~/.claude/channels/linq/access.json`. Use `/linq:access` to manage.
 
+`LINQ_CHANNEL_DIR` moves the folder all of this lives in, inbox included, so several lines can run on one machine user
+each in its own. Set, it also turns off the fallback to the Linq CLI's `~/.linq/config.json`.
+
 ## Setup
 
 1. Add marketplace: `/plugin marketplace add linq-team/claude-code-imessage-channel`
