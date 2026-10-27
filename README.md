@@ -104,6 +104,8 @@ By default, a text from an unknown sender triggers **pairing**: the server repli
 
 All state lives in `~/.claude/channels/linq/access.json`. The `/linq:access` skill commands edit this file; the server re-reads it on every inbound message, so changes take effect without a restart.
 
+A harness that keeps the list itself hands it in `LINQ_ALLOW_FROM` instead (below), and then the file holds none.
+
 ### At a glance
 
 | | |
@@ -215,6 +217,11 @@ a folder of its own, with that line's `LINQ_TOKEN` and `LINQ_FROM_PHONE` in its 
 another's state. With it set the server never falls back to the Linq CLI's `~/.linq/config.json`, whose profile is
 whichever account the machine user last signed into. Every path this README gives under `~/.claude/channels/linq` is
 under that folder instead.
+
+`LINQ_ALLOW_FROM` is the whole list of who may text the line, comma-separated, empty for nobody. Set, the policy is
+`allowlist` and that list alone decides: `access.json`'s `allowFrom` and `dmPolicy` and `LINQ_ALLOWED_SENDERS` are not
+read, no pairing is offered, and the file is written without a list, so `/linq:access` cannot change who gets through.
+A harness that keeps the list sets it as it starts the process, and starts it again to change it.
 
 ## Tools exposed to the assistant
 

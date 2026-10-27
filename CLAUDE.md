@@ -40,7 +40,8 @@ Credentials are stored in `~/.claude/channels/linq/.env`:
 - `LINQ_TOKEN` - Linq API token (required)
 - `LINQ_FROM_PHONE` - Your Linq phone number (required)
 
-Access control is in `~/.claude/channels/linq/access.json`. Use `/linq:access` to manage.
+Access control is in `~/.claude/channels/linq/access.json`. Use `/linq:access` to manage. Where `LINQ_ALLOW_FROM` is
+set, it is the whole list instead and the file holds none.
 
 `LINQ_CHANNEL_DIR` moves the folder all of this lives in, inbox included, so several lines can run on one machine user
 each in its own. Set, it also turns off the fallback to the Linq CLI's `~/.linq/config.json`.

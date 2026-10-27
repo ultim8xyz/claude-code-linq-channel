@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.6
+
+- `LINQ_ALLOW_FROM` hands the whole list of who may text the line in the environment, comma-separated, empty for
+  nobody. Set, it is the one list: `access.json`'s `allowFrom` and `dmPolicy` and `LINQ_ALLOWED_SENDERS` are not read,
+  the policy is `allowlist` and no pairing is offered, and the file is written without a list. A harness that keeps the
+  list itself hands it this way, so nothing the session can write to its folder changes who gets through.
+
 ## 0.2.5
 
 - `LINQ_CHANNEL_DIR` names the channel folder, `~/.claude/channels/linq` where it is unset: credentials, `access.json`,

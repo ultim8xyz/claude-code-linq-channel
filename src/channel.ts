@@ -51,27 +51,38 @@ interface AccessConfig {
 const CHANNEL_DIR = process.env.LINQ_CHANNEL_DIR || path.join(process.env.HOME || '', '.claude', 'channels', 'linq')
 const ACCESS_FILE = path.join(CHANNEL_DIR, 'access.json')
 
+// `LINQ_ALLOW_FROM`, where it is set (empty is nobody): the whole list of who may text the line, comma-separated. A
+// harness that keeps the list itself hands it in the environment, so it is one list: `access.json`'s `allowFrom` and
+// `dmPolicy` are not read, the policy is `allowlist`, no pairing is offered, and nothing the process can write changes
+// who gets through. The rest of the file (`greeted`, `ackReaction`, `pollInterval`, `defaultRecipient`) is read as ever.
+const HANDED = process.env.LINQ_ALLOW_FROM
+const handedAllow = HANDED === undefined ? undefined : HANDED.split(/[\s,]+/).filter(Boolean)
+
 function loadAccessConfig(): AccessConfig {
-  try {
-    const raw = JSON.parse(fs.readFileSync(ACCESS_FILE, 'utf-8'))
-    return {
-      dmPolicy: raw.dmPolicy || 'pairing',
-      allowFrom: raw.allowFrom || [],
-      defaultRecipient: raw.defaultRecipient,
-      pendingPairings: raw.pendingPairings || {},
-      ackReaction: raw.ackReaction,
-      pollInterval: raw.pollInterval,
-      greeted: raw.greeted || [],
-    }
-  } catch {
-    return { dmPolicy: 'pairing', allowFrom: [], pendingPairings: {}, greeted: [] }
+  let raw: any = {}
+  try { raw = JSON.parse(fs.readFileSync(ACCESS_FILE, 'utf-8')) || {} } catch {}
+  if (handedAllow) {
+    return { dmPolicy: 'allowlist', allowFrom: handedAllow, defaultRecipient: raw.defaultRecipient, pendingPairings: {}, ackReaction: raw.ackReaction, pollInterval: raw.pollInterval, greeted: raw.greeted || [] }
+  }
+  return {
+    dmPolicy: raw.dmPolicy || 'pairing',
+    allowFrom: raw.allowFrom || [],
+    defaultRecipient: raw.defaultRecipient,
+    pendingPairings: raw.pendingPairings || {},
+    ackReaction: raw.ackReaction,
+    pollInterval: raw.pollInterval,
+    greeted: raw.greeted || [],
   }
 }
 
 function saveAccessConfig(access: AccessConfig): void {
   const dir = path.dirname(ACCESS_FILE)
   fs.mkdirSync(dir, { recursive: true })
-  fs.writeFileSync(ACCESS_FILE, JSON.stringify(access, null, 2) + '\n')
+  // A handed list is the harness's, never written here: the file keeps what is the process's own, and the `allowlist`
+  // policy, so a plugin from before that is started on it lets nobody in rather than pairing.
+  const { allowFrom, ...own } = access
+  const out = handedAllow ? own : access
+  fs.writeFileSync(ACCESS_FILE, JSON.stringify(out, null, 2) + '\n')
 }
 
 function generatePairingCode(): string {
@@ -585,7 +596,7 @@ async function pollForMessages(): Promise<void> {
 
         const isAllowed = access.dmPolicy === 'open' ||
           access.allowFrom.includes(sender) ||
-          (config.allowedSenders.size > 0 && config.allowedSenders.has(sender))
+          (!handedAllow && config.allowedSenders.size > 0 && config.allowedSenders.has(sender))
 
         if (!isAllowed) {
           if (access.dmPolicy === 'pairing') {
@@ -770,7 +781,9 @@ console.error(`[linq]   Policy:  ${startupAccess.dmPolicy}`)
 console.error(`[linq]   Polling: every ${startupAccess.pollInterval || POLL_INTERVAL}ms`)
 console.error(`[linq]   From:    ${config.fromPhone}`)
 console.error(`[linq]   API:     ${config.apiUrl}`)
-if (startupAccess.allowFrom.length > 0) {
+if (handedAllow) {
+  console.error(`[linq]   Allowed: ${startupAccess.allowFrom.join(', ') || 'nobody'} (LINQ_ALLOW_FROM, the whole list)`)
+} else if (startupAccess.allowFrom.length > 0) {
   console.error(`[linq]   Allowed: ${startupAccess.allowFrom.join(', ')}`)
 }
 
