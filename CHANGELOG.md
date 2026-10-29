@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.7
+
+- A text not yet seen is handed if it was sent up to ten minutes before the last poll, not five seconds. Linq can list
+  a text later than its `sent_at`, and one listed past the old margin was marked seen and dropped with no journal line
+  and no log, so a harness watching the journal could not tell it was missed. seenIds already keeps a text from
+  arriving twice; the cutoff is only for what the line held before the process.
+- A process with no saved state still hands nothing sent before it started, since it has no seenIds to tell history
+  from new texts.
+- A text sent while the process ran and skipped for its age anyway is said in `plugin.log`.
+
 ## 0.2.6
 
 - `LINQ_ALLOW_FROM` hands the whole list of who may text the line in the environment, comma-separated, empty for

@@ -129,15 +129,17 @@ interface ChannelState {
   seenIds: string[]
 }
 
-function loadState(): ChannelState {
+// `fresh` where there was no state to read: the line's first process, whose seenIds know none of what it lists.
+function loadState(): ChannelState & { fresh: boolean } {
   try {
     const raw = JSON.parse(fs.readFileSync(STATE_FILE, 'utf-8'))
     return {
       lastPollTime: raw.lastPollTime || new Date().toISOString(),
       seenIds: raw.seenIds || [],
+      fresh: !raw.lastPollTime,
     }
   } catch {
-    return { lastPollTime: new Date().toISOString(), seenIds: [] }
+    return { lastPollTime: new Date().toISOString(), seenIds: [], fresh: true }
   }
 }
 
@@ -526,9 +528,16 @@ mcp.onclose = () => process.exit(0)
 // --- Message Polling ---
 
 const POLL_INTERVAL = parseInt(process.env.LINQ_POLL_INTERVAL || '3000', 10)
+// How long before the last poll a text not yet seen is still handed. Linq can list a text later than its sent_at says,
+// and one listed past the old five-second margin was marked seen and dropped without a word; seenIds is what keeps a
+// text from arriving twice, so the cutoff only has to keep out what the line held before this process.
+const LATE_MS = 10 * 60_000
+const startedAt = Date.now()
 const savedState = loadState()
 const seenMessageIds = new Set<string>(savedState.seenIds)
 let lastPollTime = savedState.lastPollTime
+// A first process has no seenIds to tell the line's history from what is new, so it hands nothing sent before it started.
+const firstCutoff = savedState.fresh ? startedAt - 5000 : 0
 
 async function pollForMessages(): Promise<void> {
   // The cutoff is when this poll began, not when the last one ended: a message that lands while a poll is in flight
@@ -549,9 +558,12 @@ async function pollForMessages(): Promise<void> {
         seenMessageIds.add(msg.id)
         if (msg.is_from_me) continue
 
-        const msgTime = new Date(msg.sent_at || msg.created_at || 0)
-        const startTime = new Date(lastPollTime)
-        if (msgTime < startTime) continue
+        const msgTime = new Date(msg.sent_at || msg.created_at || 0).getTime()
+        if (msgTime < Math.max(new Date(lastPollTime).getTime() - LATE_MS, firstCutoff)) {
+          // History is skipped quietly; a text sent while this process ran and still too old is one it never handed.
+          if (msgTime >= startedAt) console.error(`[linq] Skipped ${msg.id}: sent ${new Date(msgTime).toISOString()}, listed after the cutoff ${new Date(new Date(lastPollTime).getTime() - LATE_MS).toISOString()}`)
+          continue
+        }
 
         // Extract text and media from message parts
         let messageText = ''
